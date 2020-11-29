@@ -1,10 +1,11 @@
-class videoMidiaPlayer {
-  constructor({manifestJSON}) {
+class VideoMidiaPlayer {
+  constructor({manifestJSON, network}) {
     this.manifestJSON = manifestJSON;
     this.network = network; 
     this.videoElement = null;
     this.sourceBufferr = null;
     this.selected = {};
+    this.videoDuration = 0;
   }
 
   initializeCodec(){
@@ -14,6 +15,7 @@ class videoMidiaPlayer {
     
     if(!mediaSourceSupported){
       alert('Seu browser ou sistema não suporta o MSE');
+      return;
     }
     
     const codecSupported = MediaSource.isTypeSupported(this.manifestJSON.codec);
@@ -30,9 +32,10 @@ class videoMidiaPlayer {
 
   sourceOpenWrapper(mediaSource) {
     return async(_) => {
-      this.sourceBufferr = mediaSource.addSourceBuffer(this.manifestJSON.codec);
+      // console.log('carreggou!')
+      this.sourceBuffer = mediaSource.addSourceBuffer(this.manifestJSON.codec);
       const selected = this.selected = this.manifestJSON.intro;
-      mediaSource.duration = 0;
+      mediaSource.duration = this.videoDuration;
       await this.fileDownload(selected.url);
     }
   }
@@ -45,6 +48,31 @@ class videoMidiaPlayer {
       hostTag: this.manifestJSON.hostTag,
     };
     const finalUrl = this.network.parseManifestURL(prepareUrl);
-    console.log('url', finalUrl);
+    this.setVideoPlayerDuration(finalUrl);
+    const data = await this.network.fetchFile(finalUrl);
+    return this.processBufferSegments(data);
+  }
+
+  setVideoPlayerDuration(finalUrl) {
+    const bars = finalUrl.split('/');
+    const [name, videoDuration] = bars[bars.length - 1].split('-');
+    this.videoDuration += videoDuration;
+  }
+
+  async processBufferSegments(allSegments) {
+    const sourceBuffer = this.sourceBuffer;
+    sourceBuffer.appendBuffer(allSegments);
+
+    return new Promise((resolve, reject) => {
+      const updateEnd = (_) =>{
+        sourceBuffer.removeEventListener("updateend", updateEnd);
+        sourceBuffer.timestampOffset = this.videoDuration;
+
+        return resolve();
+      }
+
+      SourceBuffer.addEventListener("updateend", updateEnd);
+      sourceBuffer.addEventListener("error", reject);
+    })
   }
 }

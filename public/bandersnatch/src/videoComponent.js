@@ -1,4 +1,4 @@
-class videoComponent{
+class VideoComponent{
   constructor(){}
 
   initializePlayer(){

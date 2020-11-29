@@ -2,7 +2,7 @@
   "hostTag":"$HOST",
   "fileResolutionTag":"$RESOLUTION",
   "localHost":"http://localhost:8081",
-  "production":"",
+  "productionHost":"",
   "codec":"video/mp4; codecs=\"avc1.64001F,mp4a.40.2\"",
   "intro":{
     "url":"$HOST/timeline/01.intro-12.733333-$RESOLUTION.mp4",
